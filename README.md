@@ -1,3 +1,5 @@
+## URL: https://npanium.github.io/Maze-Generator/
+
 # Maze Generator
 
 A sleek, dark-themed maze generator with a modern glass morphism UI. Generate custom mazes with adjustable grid dimensions and solve them with A* pathfinding.
