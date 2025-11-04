@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cyberpunk Maze Generator</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+          "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
+          "Helvetica Neue", sans-serif;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #0a0a0a;
+        padding: 20px;
+        overflow-x: hidden;
+      }
+
+      .container {
+        max-width: 1200px;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 30px;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .title {
+        font-size: 2rem;
+        font-weight: 600;
+        color: #ffffff;
+        letter-spacing: -0.5px;
+        margin-bottom: 8px;
+      }
+
+      .subtitle {
+        font-size: 0.95rem;
+        color: #888888;
+        font-weight: 400;
+        letter-spacing: 0;
+      }
+
+      .main-content {
+        display: flex;
+        gap: 30px;
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 100%;
+      }
+
+      .glass-panel {
+        background: rgba(30, 30, 30, 0.6);
+        backdrop-filter: blur(20px);
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        padding: 32px;
+        transition: all 0.3s ease;
+      }
+
+      .glass-panel:hover {
+        border-color: rgba(255, 255, 255, 0.08);
+        transform: translateY(-2px);
+      }
+
+      .canvas-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #mazeCanvas {
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        background: #000;
+      }
+
+      .controls-panel {
+        min-width: 300px;
+        max-width: 400px;
+      }
+
+      .control-group {
+        margin-bottom: 25px;
+      }
+
+      .control-label {
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: #ffffff;
+        margin-bottom: 16px;
+        display: block;
+      }
+
+      .slider-container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 16px;
+      }
+
+      .slider-label {
+        color: #cccccc;
+        font-size: 0.9rem;
+        min-width: 80px;
+        font-weight: 400;
+      }
+
+      input[type="range"] {
+        flex: 1;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 5px;
+        outline: none;
+        -webkit-appearance: none;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        background: #00ff88;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
+        transition: all 0.3s ease;
+      }
+
+      input[type="range"]::-webkit-slider-thumb:hover {
+        transform: scale(1.1);
+        box-shadow: 0 0 12px rgba(0, 255, 136, 0.6);
+      }
+
+      input[type="range"]::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        background: #00ff88;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
+        border: none;
+        transition: all 0.3s ease;
+      }
+
+      input[type="range"]::-moz-range-thumb:hover {
+        transform: scale(1.1);
+        box-shadow: 0 0 12px rgba(0, 255, 136, 0.6);
+      }
+
+      .value-display {
+        color: #00ff88;
+        font-weight: 600;
+        font-size: 0.95rem;
+        min-width: 30px;
+        text-align: center;
+      }
+
+      .button-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      button {
+        font-size: 0.95rem;
+        font-weight: 500;
+        padding: 16px 24px;
+        border: none;
+        border-radius: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      button span {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      button::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+      }
+
+      button:hover::before {
+        width: 300px;
+        height: 300px;
+      }
+
+      .icon-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+      }
+
+      .arrow-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+      }
+
+      #generateBtn {
+        background: rgba(255, 255, 255, 0.08);
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      #generateBtn:hover {
+        background: rgba(255, 255, 255, 0.12);
+        transform: translateY(-2px);
+      }
+
+      #generateBtn .icon-circle {
+        background: #00ff88;
+        color: #0a0a0a;
+      }
+
+      #pathBtn {
+        background: rgba(255, 255, 255, 0.08);
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      #pathBtn:hover {
+        background: rgba(255, 255, 255, 0.12);
+        transform: translateY(-2px);
+      }
+
+      #pathBtn .icon-circle {
+        background: #00ff88;
+        color: #0a0a0a;
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      .matrix-panel {
+        width: 100%;
+        max-width: 600px;
+      }
+
+      .output-panel {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 100%;
+        gap: 30px;
+      }
+
+      .output-panel > div {
+        min-width: 300px;
+        max-width: 400px;
+      }
+
+      #mazeMatrix {
+        font-family: "SF Mono", "Monaco", "Inconsolata", "Fira Code",
+          "Droid Sans Mono", "Source Code Pro", monospace;
+        color: #cccccc;
+        font-size: 0.85rem;
+        line-height: 1.6;
+        white-space: pre;
+        overflow-x: auto;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      #mazeMatrix::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+
+      #mazeMatrix::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+      }
+
+      #mazeMatrix::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+      }
+
+      .info-text {
+        color: #888888;
+        font-size: 0.85rem;
+        margin-top: 10px;
+        text-align: center;
+      }
+
+      .json-output {
+        font-family: "SF Mono", "Monaco", "Inconsolata", "Fira Code",
+          "Droid Sans Mono", "Source Code Pro", monospace;
+        color: #cccccc;
+        font-size: 0.85rem;
+        line-height: 1.6;
+        white-space: pre;
+        overflow-x: auto;
+        max-height: 400px;
+        overflow-y: auto;
+        background: rgba(0, 0, 0, 0.4);
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .json-output::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+
+      .json-output::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+      }
+
+      .json-output::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+      }
+
+      .copy-btn {
+        font-size: 0.9rem;
+        font-weight: 500;
+        padding: 12px 20px;
+        margin-top: 12px;
+        background: rgba(255, 255, 255, 0.08);
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .copy-btn:hover {
+        background: rgba(255, 255, 255, 0.12);
+        transform: translateY(-2px);
+      }
+
+      .copy-btn:active {
+        transform: translateY(0);
+      }
+
+      .output-section {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .progress-dots {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 32px;
+      }
+
+      .dot {
+        width: 32px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 2px;
+        transition: all 0.3s ease;
+      }
+
+      .dot.active {
+        background: #00ff88;
+      }
+
+      @media (max-width: 768px) {
+        .title {
+          font-size: 2rem;
+        }
+
+        .main-content {
+          flex-direction: column;
+        }
+
+        .controls-panel {
+          max-width: 100%;
+        }
+
+        #mazeCanvas {
+          max-width: 100%;
+          height: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="progress-dots">
+        <div class="dot active"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+
+      <div class="header">
+        <h1 class="title">Maze Generator</h1>
+        <p class="subtitle">Create custom mazes with adjustable parameters</p>
+      </div>
+
+      <div class="main-content">
+        <div class="glass-panel canvas-container">
+          <canvas id="mazeCanvas" width="350" height="400"></canvas>
+        </div>
+
+        <div class="glass-panel controls-panel">
+          <div class="control-group">
+            <label class="control-label">Grid Configuration</label>
+            <div class="slider-container">
+              <span class="slider-label">Columns:</span>
+              <input
+                type="range"
+                id="colsSlider"
+                min="5"
+                max="15"
+                value="9"
+                step="2"
+              />
+              <span class="value-display" id="colsValue">9</span>
+            </div>
+            <div class="slider-container">
+              <span class="slider-label">Rows:</span>
+              <input
+                type="range"
+                id="rowsSlider"
+                min="6"
+                max="20"
+                value="12"
+                step="2"
+              />
+              <span class="value-display" id="rowsValue">12</span>
+            </div>
+            <p class="info-text">Adjust grid size and regenerate</p>
+          </div>
+
+          <div class="button-group">
+            <button id="generateBtn">
+              <span>
+                <div class="icon-circle">⚡</div>
+                Generate Maze
+              </span>
+              <div class="arrow-icon">→</div>
+            </button>
+            <button id="pathBtn">
+              <span>
+                <div class="icon-circle">🎯</div>
+                Solve & Isolate Path
+              </span>
+              <div class="arrow-icon">→</div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="output-panel">
+        <div class="glass-panel matrix-panel">
+          <label class="control-label">Matrix Output</label>
+          <pre id="mazeMatrix"></pre>
+        </div>
+
+        <div class="glass-panel matrix-panel">
+          <div class="output-section">
+            <label class="control-label">JSON Array Output</label>
+            <pre id="jsonOutput" class="json-output"></pre>
+            <button class="copy-btn" id="copyBtn">
+              <span>📋 Copy JSON Array</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let gridCols = 9;
+      let gridRows = 12;
+      let grid, start, end;
+
+      const colsSlider = document.getElementById("colsSlider");
+      const rowsSlider = document.getElementById("rowsSlider");
+      const colsValue = document.getElementById("colsValue");
+      const rowsValue = document.getElementById("rowsValue");
+
+      colsSlider.addEventListener("input", (e) => {
+        gridCols = parseInt(e.target.value);
+        colsValue.textContent = gridCols;
+      });
+
+      rowsSlider.addEventListener("input", (e) => {
+        gridRows = parseInt(e.target.value);
+        rowsValue.textContent = gridRows;
+      });
+
+      function generateMazeMatrix(cols, rows) {
+        grid = Array.from({ length: rows }, () => Array(cols).fill(1));
+
+        start = { x: Math.floor(cols - cols + 1), y: 0 };
+        end = { x: Math.floor(cols - 2), y: rows - 1 };
+
+        grid[start.y][start.x] = 0;
+        grid[end.y][end.x] = 0;
+
+        const stack = [{ x: start.x, y: start.y + 1 }];
+        grid[start.y + 1][start.x] = 0;
+
+        function neighbors(x, y) {
+          const dirs = [
+            [0, -1],
+            [1, 0],
+            [0, 1],
+            [-1, 0],
+          ];
+          return dirs
+            .map(([dx, dy]) => ({
+              nx: x + dx * 2,
+              ny: y + dy * 2,
+              wx: x + dx,
+              wy: y + dy,
+            }))
+            .filter(
+              ({ nx, ny }) =>
+                nx > 0 && nx < cols && ny > 0 && ny < rows && grid[ny][nx] === 1
+            );
+        }
+
+        while (stack.length) {
+          const current = stack[stack.length - 1];
+          const neigh = neighbors(current.x, current.y);
+          if (neigh.length) {
+            const { nx, ny, wx, wy } =
+              neigh[Math.floor(Math.random() * neigh.length)];
+            grid[wy][wx] = 0;
+            grid[ny][nx] = 0;
+            stack.push({ x: nx, y: ny });
+          } else {
+            stack.pop();
+          }
+        }
+
+        const dirs = [
+          [0, -1],
+          [1, 0],
+          [0, 1],
+          [-1, 0],
+        ];
+        const hasPathNeighbor = dirs.some(([dx, dy]) => {
+          const nx = end.x + dx,
+            ny = end.y + dy;
+          return (
+            nx >= 0 && ny >= 0 && nx < cols && ny < rows && grid[ny][nx] === 0
+          );
+        });
+        if (!hasPathNeighbor && end.y > 0) {
+          grid[end.y - 1][end.x] = 0;
+        }
+      }
+
+      function findPathAStar() {
+        const open = [{ x: start.x, y: start.y, g: 0, f: 0, parent: null }];
+        const closed = new Set();
+
+        function key(x, y) {
+          return `${x},${y}`;
+        }
+        function heuristic(a, b) {
+          return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+        }
+
+        while (open.length) {
+          open.sort((a, b) => a.f - b.f);
+          const current = open.shift();
+
+          if (current.x === end.x && current.y === end.y) {
+            let path = [];
+            let c = current;
+            while (c) {
+              path.push({ x: c.x, y: c.y });
+              c = c.parent;
+            }
+            return path.reverse();
+          }
+
+          closed.add(key(current.x, current.y));
+
+          [
+            [0, -1],
+            [1, 0],
+            [0, 1],
+            [-1, 0],
+          ].forEach(([dx, dy]) => {
+            const nx = current.x + dx;
+            const ny = current.y + dy;
+
+            if (nx < 0 || ny < 0 || nx >= gridCols || ny >= gridRows) return;
+            if (grid[ny][nx] === 1) return;
+            if (closed.has(key(nx, ny))) return;
+
+            const g = current.g + 1;
+            const f = g + heuristic({ x: nx, y: ny }, end);
+
+            const existing = open.find((n) => n.x === nx && n.y === ny);
+            if (!existing || g < existing.g) {
+              open.push({ x: nx, y: ny, g, f, parent: current });
+            }
+          });
+        }
+        return null;
+      }
+
+      function markPathInGrid(path) {
+        path.forEach((p) => {
+          grid[p.y][p.x] = 2;
+        });
+      }
+
+      function keepOnlyPath() {
+        for (let y = 0; y < gridRows; y++) {
+          for (let x = 0; x < gridCols; x++) {
+            if (grid[y][x] === 0) grid[y][x] = 1;
+          }
+        }
+      }
+
+      function drawMaze() {
+        const canvas = document.getElementById("mazeCanvas");
+        const ctx = canvas.getContext("2d");
+        const cellW = canvas.width / gridCols;
+        const cellH = canvas.height / gridRows;
+
+        for (let y = 0; y < gridRows; y++) {
+          for (let x = 0; x < gridCols; x++) {
+            if (grid[y][x] === 1) {
+              ctx.fillStyle = "#000000";
+            } else if (grid[y][x] === 2) {
+              ctx.fillStyle = "#ffff00";
+            } else {
+              ctx.fillStyle = "#1a1a2e";
+            }
+            ctx.fillRect(x * cellW, y * cellH, cellW, cellH);
+          }
+        }
+
+        ctx.fillStyle = "#00ff00";
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = "#00ff00";
+        ctx.fillRect(start.x * cellW, start.y * cellH, cellW, cellH);
+
+        ctx.fillStyle = "#ff0000";
+        ctx.shadowColor = "#ff0000";
+        ctx.fillRect(end.x * cellW, end.y * cellH, cellW, cellH);
+        ctx.shadowBlur = 0;
+      }
+
+      function showMatrix() {
+        document.getElementById("mazeMatrix").textContent = grid
+          .map((row) => row.join(" "))
+          .join("\n");
+      }
+
+      function showJsonOutput() {
+        const jsonOutput = {
+          grid: grid,
+        };
+        document.getElementById("jsonOutput").textContent = JSON.stringify(
+          jsonOutput,
+          null,
+          2
+        );
+      }
+
+      function copyJsonToClipboard() {
+        const jsonOutput = {
+          grid: grid,
+        };
+        const jsonString = JSON.stringify(jsonOutput, null, 2);
+
+        navigator.clipboard
+          .writeText(jsonString)
+          .then(() => {
+            const btn = document.getElementById("copyBtn");
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "<span>✓ Copied!</span>";
+            setTimeout(() => {
+              btn.innerHTML = originalText;
+            }, 2000);
+          })
+          .catch((err) => {
+            console.error("Failed to copy: ", err);
+          });
+      }
+
+      function generateAndDraw() {
+        generateMazeMatrix(gridCols, gridRows);
+        drawMaze();
+        showMatrix();
+        showJsonOutput();
+      }
+
+      document
+        .getElementById("generateBtn")
+        .addEventListener("click", generateAndDraw);
+
+      document.getElementById("pathBtn").addEventListener("click", () => {
+        const path = findPathAStar();
+        if (path) {
+          markPathInGrid(path);
+          keepOnlyPath();
+          drawMaze();
+          showMatrix();
+          showJsonOutput();
+        }
+      });
+
+      document
+        .getElementById("copyBtn")
+        .addEventListener("click", copyJsonToClipboard);
+
+      generateAndDraw();
+    </script>
+  </body>
+</html>
